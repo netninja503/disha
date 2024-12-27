@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f1f1f1;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .branch-selection, .semester-buttons, .search-box {
+            margin-bottom: 20px;
+        }
+
+        select, input, button {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+        }
+
+        button {
+            background-color: #2196F3;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1a73e8;
+        }
+
+        #currentSem {
+            margin-top: 10px;
+            padding: 15px;
+            background-color: #e7f4ff;
+            border: 1px solid #2196F3;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table th, table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        table th {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        footer {
+            background-color: #2196F3;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 20px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Attendance Management System</h2>
+
+        <!-- Branch Selection -->
+        <div class="branch-selection">
+            <label for="branchSelect">Select Branch:</label>
+            <select id="branchSelect" onchange="loadSemesters()">
+                <option value="">-- Select Branch --</option>
+                <option value="ee">Electrical Engineering</option>
+                <option value="cs">Computer Science</option>
+                <option value="me">Mechanical Engineering</option>
+                <option value="ec">Electronics and Communication</option>
+                <option value="ce">Civil Engineering</option>
+            </select>
+        </div>
+
+        <!-- Semester Selection -->
+        <div id="semesterButtons" style="display: none;">
+            <p>Select Semester:</p>
+            <button onclick="switchSemester(1)">Semester 1</button>
+            <button onclick="switchSemester(2)">Semester 2</button>
+            <button onclick="switchSemester(3)">Semester 3</button>
+            <button onclick="switchSemester(4)">Semester 4</button>
+            <button onclick="switchSemester(5)">Semester 5</button>
+            <button onclick="switchSemester(6)">Semester 6</button>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search by Name or Registration Number">
+            <button onclick="searchStudent()">Search</button>
+        </div>
+
+        <!-- Current Semester Information -->
+        <div id="currentSem" style="display: none;">
+            <p id="currentSemText"></p>
+        </div>
+
+        <!-- Attendance Table -->
+        <div id="attendanceTable" style="display: none;">
+            <h3>Attendance Summary</h3>
+            <table id="attendanceData">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Registration Number</th>
+                        <th>Present Days</th>
+                        <th>Absent Days</th>
+                        <th>Attendance Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be populated dynamically here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <footer>
+        Developed by CodeFlux
+    </footer>
+
+    <script>
+        let currentBranch = '';
+        let currentSemester = 0;
+
+        // Load available semesters based on branch selection
+        function loadSemesters() {
+            const branch = document.getElementById('branchSelect').value;
+            currentBranch = branch;
+            document.getElementById('semesterButtons').style.display = branch ? 'block' : 'none';
+            document.getElementById('currentSem').style.display = 'none'; // Hide current semester display
+            document.getElementById('attendanceTable').style.display = 'none'; // Hide attendance table
+        }
+
+        // Switch between semesters and display attendance data
+        function switchSemester(semester) {
+            currentSemester = semester;
+            const semesterKey = `${currentBranch}_semester_${currentSemester}_attendance`;
+
+            // Display current semester
+            document.getElementById('currentSemText').innerText = `You are viewing data for Semester ${currentSemester}.`;
+            document.getElementById('currentSem').style.display = 'block';
+
+            // Fetch data from localStorage based on branch and semester
+            const attendanceData = JSON.parse(localStorage.getItem(semesterKey)) || [];
+            if (attendanceData.length === 0) {
+                alert("No attendance data found for this semester.");
+                return;
+            }
+
+            // Populate the attendance table with data
+            const tableBody = document.getElementById('attendanceData').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; // Clear previous data
+
+            attendanceData.forEach(student => {
+                const presentCount = student.attendance.filter(status => status === 'present').length;
+                const absentCount = student.attendance.length - presentCount;
+                const percentage = (presentCount / student.attendance.length) * 100;
+
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>${student.regNo}</td>
+                    <td>${presentCount}</td>
+                    <td>${absentCount}</td>
+                    <td>${percentage.toFixed(2)}%</td>
+                `;
+            });
+
+            document.getElementById('attendanceTable').style.display = 'block'; // Show the table
+        }
+
+        // Search for a student by name or registration number
+        function searchStudent() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            let foundStudent = null;
+
+            // Loop through each semester to search
+            for (let semester = 1; semester <= 6; semester++) {
+                const semesterKey = `${currentBranch}_semester_${semester}_attendance`;
+                const attendanceData = JSON.parse(localStorage.getItem(semesterKey)) || [];
+
+                foundStudent = attendanceData.find(student => 
+                    student.name.toLowerCase().includes(searchTerm) ||
+                    student.regNo.toLowerCase().includes(searchTerm)
+                );
+
+                if (foundStudent) {
+                    break;
+                }
+            }
+
+            if (foundStudent) {
+                // Display student attendance summary
+                alert(`Student found: ${foundStudent.name}, Semester: ${currentSemester}`);
+                // You can also display detailed summary for the found student if needed
+            } else {
+                alert("Student not found.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f1f1f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+        .search-box, .branch-select, .semester-select {
+            margin-bottom: 20px;
+        }
+        .search-box input, .branch-select select, .semester-select select {
+            padding: 10px;
+            width: 250px;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .search-box button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #attendanceSummary {
+            margin-top: 20px;
+        }
+        #attendanceSummary p {
+            margin: 5px 0;
+        }
+        footer {
+            background-color: #2196F3;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Student Attendance</h2>
+
+        <!-- Branch Selection -->
+        <div class="branch-select">
+            <select id="branchSelect">
+                <option value="ee">Electrical Engineering (EE)</option>
+                <option value="me">Mechanical Engineering (ME)</option>
+                <option value="ce">Civil Engineering (CE)</option>
+                <option value="is">Information Systems (IS)</option>
+                <option value="ec">Electronics and Communication (EC)</option>
+                <option value="cs">Computer Science</option>
+            </select>
+        </div>
+
+        <!-- Semester Selection -->
+        <div class="semester-select">
+            <select id="semesterSelect">
+                <option value="1">Semester 1</option>
+                <option value="2">Semester 2</option>
+                <option value="3">Semester 3</option>
+                <option value="4">Semester 4</option>
+                <option value="5">Semester 5</option>
+                <option value="6">Semester 6</option>
+            </select>
+        </div>
+
+        <!-- Search by Name -->
+        <div class="search-box">
+            <input type="text" id="searchStudent" placeholder="Enter student name or registration number">
+            <button onclick="showStudentAttendance()">Search</button>
+        </div>
+
+        <!-- Attendance Summary -->
+        <div id="attendanceSummary" style="display:none;">
+            <h3>Attendance Summary</h3>
+            <p id="studentDetails"></p>
+        </div>
+    </div>
+
+    <footer>
+        Developed by CodeFlux
+    </footer>
+
+    <script>
+        // Function to get the selected branch
+        function getSelectedBranch() {
+            return document.getElementById('branchSelect').value;
+        }
+
+        // Function to get the selected semester
+        function getSelectedSemester() {
+            return document.getElementById('semesterSelect').value;
+        }
+
+        // Function to show student attendance based on search
+        function showStudentAttendance() {
+            const studentNameOrRegNo = document.getElementById('searchStudent').value.trim();
+            const selectedBranch = getSelectedBranch();
+            const selectedSemester = getSelectedSemester();
+            
+            // Building the localStorage key dynamically based on branch and semester
+            const storageKey = `${selectedBranch}_semester_${selectedSemester}_attendance`;
+            
+            // Fetch attendance data from localStorage
+            const attendanceData = JSON.parse(localStorage.getItem(storageKey)) || [];
+            
+            // Search for the student by name or registration number
+            const student = attendanceData.find(student => 
+                student.name.toLowerCase() === studentNameOrRegNo.toLowerCase() || 
+                student.regNo.toLowerCase() === studentNameOrRegNo.toLowerCase()
+            );
+            
+            // If student is found
+            if (student) {
+                const presentCount = student.attendance.filter(status => status === 'present').length;
+                const absentCount = student.attendance.length - presentCount;
+                const percentage = (presentCount / student.attendance.length) * 100;
+
+                const summaryText = `
+                    <p><strong>Name:</strong> ${student.name}</p>
+                    <p><strong>Registration Number:</strong> ${student.regNo}</p>
+                    <p><strong>Present:</strong> ${presentCount} days</p>
+                    <p><strong>Absent:</strong> ${absentCount} days</p>
+                    <p><strong>Attendance Percentage:</strong> ${percentage.toFixed(2)}%</p>
+                    <p><strong>Status:</strong> ${percentage < 75 ? "Attendance Shortage" : "Sufficient Attendance"}</p>
+                `;
+                
+                document.getElementById('studentDetails').innerHTML = summaryText;
+                document.getElementById('attendanceSummary').style.display = 'block';
+            } else {
+                alert("Student not found.");
+                document.getElementById('attendanceSummary').style.display = 'none';
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Science Engineering Attendance Management</title>
+    <style>
+        /* Basic styling for the attendance page */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f1f1f1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 1200px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .semester-buttons {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .semester-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2196F3;
+            color: white;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .attendance-btn {
+            padding: 8px 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+        .present {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .absent {
+            background-color: #f44336;
+            color: white;
+        }
+        .add-student {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .add-student input {
+            width: 48%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .add-student button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        footer {
+            background-color: #2196F3;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 20px;
+        }
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Computer Science</h2>
+
+        <!-- Semester Buttons -->
+        <div class="semester-buttons">
+            <button onclick="switchSemester(1)">Semester 1</button>
+            <button onclick="switchSemester(2)">Semester 2</button>
+            <button onclick="switchSemester(3)">Semester 3</button>
+            <button onclick="switchSemester(4)">Semester 4</button>
+            <button onclick="switchSemester(5)">Semester 5</button>
+            <button onclick="switchSemester(6)">Semester 6</button>
+        </div>
+
+        <!-- Add Student Form -->
+        <div class="add-student">
+            <input type="text" id="studentName" placeholder="Student Name">
+            <input type="text" id="regNo" placeholder="Registration Number">
+            <button onclick="addStudent()">Add Student</button>
+        </div>
+
+        <!-- Attendance Table -->
+        <table class="attendance-table" id="attendanceTable">
+            <thead>
+                <tr>
+                    <th>Student Name</th>
+                    <th>Registration Number</th>
+                </tr>
+            </thead>
+            <tbody id="attendanceBody">
+                <!-- Student rows will be added dynamically -->
+            </tbody>
+        </table>
+
+        <!-- Save, Add Day, and Summary Buttons -->
+        <button class="save-button" onclick="saveAttendance()">Save Attendance</button>
+        <button class="add-day-button" onclick="addDay()">Add Day</button>
+        <button class="summary-button" onclick="searchStudentSummary()">Search Student Summary</button>
+        <button class="summary-button" onclick="searchDaySummary()">Search Day Summary</button>
+    </div>
+
+    <!-- Modal for Summary -->
+    <div id="summaryModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2>Summary</h2>
+            <div id="modalBody">
+                <!-- Summary content will be inserted dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Developed by CodeFlux
+    </footer>
+
+    <script>
+        let currentSemester = 1;
+        let dayCount = 0;
+
+        function loadAttendanceData() {
+            const attendanceData = JSON.parse(localStorage.getItem(`cs_semester_${currentSemester}_attendance`)) || [];
+            const attendanceBody = document.getElementById('attendanceBody');
+            const tableHead = document.querySelector("#attendanceTable thead tr");
+            attendanceBody.innerHTML = '';
+            tableHead.innerHTML = `<th>Student Name</th><th>Registration Number</th>`;
+
+            dayCount = attendanceData.length > 0 ? attendanceData[0].attendance.length : 0;
+
+            for (let i = 1; i <= dayCount; i++) {
+                const newHeader = document.createElement('th');
+                newHeader.textContent = `Day ${i}`;
+                tableHead.appendChild(newHeader);
+            }
+
+            attendanceData.forEach(student => {
+                const row = document.createElement('tr');
+                row.innerHTML = `  
+                    <td>${student.name}</td>
+                    <td>${student.regNo}</td>
+                    ${student.attendance.map(day => `<td><button class="attendance-btn ${day}" onclick="toggleAttendance(this)">${day}</button></td>`).join('')}
+                `;
+                attendanceBody.appendChild(row);
+            });
+        }
+
+        function switchSemester(semester) {
+            currentSemester = semester;
+            loadAttendanceData();
+        }
+
+        function addStudent() {
+            const studentName = document.getElementById("studentName").value;
+            const regNo = document.getElementById("regNo").value;
+
+            if (studentName && regNo) {
+                const studentData = {
+                    name: studentName,
+                    regNo: regNo,
+                    attendance: Array(dayCount).fill('absent')
+                };
+                const currentAttendance = JSON.parse(localStorage.getItem(`cs_semester_${currentSemester}_attendance`)) || [];
+                currentAttendance.push(studentData);
+                localStorage.setItem(`cs_semester_${currentSemester}_attendance`, JSON.stringify(currentAttendance));
+
+                loadAttendanceData();
+                document.getElementById("studentName").value = '';
+                document.getElementById("regNo").value = '';
+            }
+        }
+
+        function toggleAttendance(button) {
+            if (button.classList.contains('absent')) {
+                button.classList.remove('absent');
+                button.classList.add('present');
+                button.innerText = 'Present';
+            } else {
+                button.classList.remove('present');
+                button.classList.add('absent');
+                button.innerText = 'Absent';
+            }
+
+            saveAttendance();
+        }
+
+        function saveAttendance() {
+            const rows = document.querySelectorAll('#attendanceTable tbody tr');
+            const updatedData = [];
+
+            rows.forEach(row => {
+                const studentName = row.children[0].textContent;
+                const regNo = row.children[1].textContent;
+                const attendance = Array.from(row.children).slice(2).map(cell => {
+                    const button = cell.querySelector('button');
+                    return button.classList.contains('present') ? 'present' : 'absent';
+                });
+
+                updatedData.push({ name: studentName, regNo: regNo, attendance: attendance });
+            });
+
+            localStorage.setItem(`cs_semester_${currentSemester}_attendance`, JSON.stringify(updatedData));
+        }
+
+        function addDay() {
+            dayCount++;
+            const tableHead = document.querySelector("#attendanceTable thead tr");
+            const newHeader = document.createElement('th');
+            newHeader.textContent = `Day ${dayCount}`;
+            tableHead.appendChild(newHeader);
+
+            const rows = document.querySelectorAll('#attendanceTable tbody tr');
+            rows.forEach(row => {
+                const newCell = row.insertCell(-1);
+                const newButton = document.createElement('button');
+                newButton.classList.add('attendance-btn', 'absent');
+                newButton.innerText = 'Absent';
+                newButton.onclick = function () {
+                    toggleAttendance(newButton);
+                };
+                newCell.appendChild(newButton);
+            });
+
+            saveAttendance();
+        }
+
+        function openModal(content) {
+            const modal = document.getElementById('summaryModal');
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = content;
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('summaryModal');
+            modal.style.display = 'none';
+        }
+
+        function searchStudentSummary() {
+            const studentName = prompt("Enter the student's name to view their summary:");
+            if (studentName) {
+                const attendanceData = JSON.parse(localStorage.getItem(`cs_semester_${currentSemester}_attendance`)) || [];
+                const student = attendanceData.find(student => student.name.toLowerCase() === studentName.toLowerCase());
+
+                if (student) {
+                    const presentCount = student.attendance.filter(status => status === 'present').length;
+                    const absentCount = student.attendance.length - presentCount;
+
+                    const summary = `
+                        <h3>${student.name} (${student.regNo}) Summary:</h3>
+                        <p><strong>${presentCount}</strong> Present, <strong>${absentCount}</strong> Absent</p>
+                    `;
+                    openModal(summary);
+                } else {
+                    alert("Student not found!");
+                }
+            }
+        }
+
+        function searchDaySummary() {
+            const dayNumber = prompt("Enter the day number (e.g., 1, 2, 3, etc.) to view the summary:");
+            if (dayNumber) {
+                const attendanceData = JSON.parse(localStorage.getItem(`cs_semester_${currentSemester}_attendance`)) || [];
+                const dayIndex = parseInt(dayNumber) - 1;
+
+                if (dayIndex >= 0 && dayIndex < dayCount) {
+                    let presentCount = 0;
+                    let absentCount = 0;
+
+                    attendanceData.forEach(student => {
+                        if (student.attendance[dayIndex] === 'present') {
+                            presentCount++;
+                        } else {
+                            absentCount++;
+                        }
+                    });
+
+                    const daySummary = `
+                        <h3>Day ${dayNumber} Summary:</h3>
+                        <p><strong>${presentCount}</strong> Present, <strong>${absentCount}</strong> Absent</p>
+                    `;
+                    openModal(daySummary);
+                } else {
+                    alert("Invalid day number.");
+                }
+            }
+        }
+
+        // Load attendance data on page load
+        loadAttendanceData();
+    </script>
+</body>
+</html>
